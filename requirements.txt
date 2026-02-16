@@ -1,0 +1,5 @@
+pygame
+torch
+flask
+numpy
+opencv-python-headless

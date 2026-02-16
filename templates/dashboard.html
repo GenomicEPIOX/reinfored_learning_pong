@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong DQN Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        .container { display: flex; flex-direction: column; align-items: center; }
+        .chart-container { width: 80%; height: 300px; margin: 20px 0; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; }
+        .stats { display: flex; justify-content: space-around; width: 80%; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 0 5px rgba(0,0,0,0.1); width: 20%; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #007bff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pong Deep Q-Learning Dashboard</h1>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div>Episode</div>
+                <div class="stat-value" id="current-episode">0</div>
+            </div>
+            <div class="stat-card">
+                <div>Epsilon</div>
+                <div class="stat-value" id="current-epsilon">1.0</div>
+            </div>
+            <div class="stat-card">
+                <div>Avg Score (Last 10)</div>
+                <div class="stat-value" id="avg-score">0.0</div>
+            </div>
+            <div class="stat-card">
+                <div>Avg Loss</div>
+                <div class="stat-value" id="avg-loss">0.0</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="scoreChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="lossChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="epsilonChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const ctxScore = document.getElementById('scoreChart').getContext('2d');
+        const ctxLoss = document.getElementById('lossChart').getContext('2d');
+        const ctxEpsilon = document.getElementById('epsilonChart').getContext('2d');
+
+        const scoreChart = new Chart(ctxScore, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Score per Episode',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }]
+            },
+            options: { maintainAspectRatio: false }
+        });
+
+        const lossChart = new Chart(ctxLoss, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Average Loss',
+                    data: [],
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1
+                }]
+            },
+            options: { maintainAspectRatio: false }
+        });
+
+        const epsilonChart = new Chart(ctxEpsilon, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Epsilon (Exploration Rate)',
+                    data: [],
+                    borderColor: 'rgb(54, 162, 235)',
+                    tension: 0.1
+                }]
+            },
+            options: { maintainAspectRatio: false }
+        });
+
+        function updateCharts() {
+            fetch('/api/metrics')
+                .then(response => response.json())
+                .then(data => {
+                    const episodes = data.episode;
+
+                    // Update stats
+                    if (episodes.length > 0) {
+                        document.getElementById('current-episode').innerText = episodes[episodes.length - 1];
+                        document.getElementById('current-epsilon').innerText = data.epsilon[data.epsilon.length - 1].toFixed(4);
+
+                        const scores = data.score;
+                        const last10 = scores.slice(-10);
+                        const avg = last10.reduce((a, b) => a + b, 0) / last10.length;
+                        document.getElementById('avg-score').innerText = avg.toFixed(2);
+
+                        const loss = data.loss[data.loss.length - 1];
+                        document.getElementById('avg-loss').innerText = loss.toFixed(4);
+                    }
+
+                    // Update Score Chart
+                    scoreChart.data.labels = episodes;
+                    scoreChart.data.datasets[0].data = data.score;
+                    scoreChart.update();
+
+                    // Update Loss Chart
+                    lossChart.data.labels = episodes;
+                    lossChart.data.datasets[0].data = data.loss;
+                    lossChart.update();
+
+                    // Update Epsilon Chart
+                    epsilonChart.data.labels = episodes;
+                    epsilonChart.data.datasets[0].data = data.epsilon;
+                    epsilonChart.update();
+                })
+                .catch(err => console.error(err));
+        }
+
+        setInterval(updateCharts, 2000); // Update every 2 seconds
+    </script>
+</body>
+</html>
