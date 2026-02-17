@@ -28,7 +28,7 @@ MAX_EPISODES = 5000
 def train():
     # Start dashboard
     def start_dashboard():
-        dashboard.run_dashboard(port=5000)
+        dashboard.run_dashboard(port=50000)
 
     t = threading.Thread(target=start_dashboard)
     t.daemon = True
